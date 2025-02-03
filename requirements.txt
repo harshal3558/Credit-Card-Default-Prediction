@@ -9,6 +9,7 @@ seaborn
 catboost
 xgboost
 mlflow
-# ipykernel
+ipykernel
+lightgbm
 
 #-e .
