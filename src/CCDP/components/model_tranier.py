@@ -1,7 +1,13 @@
 import os
 import sys
 from dataclasses import dataclass
+from urllib.parse import urlparse
+import mlflow
+import mlflow.sklearn
 import numpy as np
+import dagshub
+
+
 # Importing classification model
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
@@ -26,13 +32,13 @@ class ModelTrainer:
         self.model_trainer_config=ModelTrainerConfig()
 
     def eval_metrics(self,actual, pred):
-        class_report = np.sqrt(classification_report(actual, pred))
+        # class_report = (classification_report(actual, pred))
         accuracy = accuracy_score(actual, pred)
         precision = precision_score(actual, pred)
         f1 = f1_score(actual, pred)
-        recall = recall_score(actual, pred)
-        confusion_mat = confusion_matrix(actual, pred)
-        return class_report,accuracy,precision,f1,recall,confusion_mat
+        # recall = recall_score(actual, pred)
+        # confusion_mat = confusion_matrix(actual, pred)
+        return accuracy,precision,f1  #recall,#confusion_mat, class_report
 
     def initiate_model_trainer(self,train_array,test_array):
         try:
@@ -128,16 +134,51 @@ class ModelTrainer:
             ]
             best_model = models[best_model_name]
 
-            # print("This is the best model:")
-            # print(best_model_name)
+            print("This is the best model:")
+            print(best_model_name)
 
-            # model_names = list(params.keys())
+            model_names = list(params.keys())
 
-            # actual_model=""
+            actual_model=""
 
-            # for model in model_names:
-            #     if best_model_name == model:
-            #         actual_model = actual_model + model
+            for model in model_names:
+                if best_model_name == model:
+                    actual_model = actual_model + model
+            
+            best_params = params[actual_model]
+
+            # dagshub.init(repo_owner='harshal3558', repo_name='ML-Project', mlflow=True)
+            mlflow.set_registry_uri("https://dagshub.com/harshal3558/Credit-Card-Default-Prediction.mlflow")
+            tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
+
+            # mlflow
+
+            # import dagshub
+            dagshub.init(repo_owner='harshal3558', repo_name='Credit-Card-Default-Prediction', mlflow=True)
+            with mlflow.start_run():
+
+                predicted_qualities = best_model.predict(X_test)
+
+                (accuracy, precision, f1) = self.eval_metrics(y_test, predicted_qualities)
+
+                mlflow.log_params(best_params)
+
+                mlflow.log_metric("accuracy", accuracy)
+                mlflow.log_metric("precision", precision)
+                mlflow.log_metric("f1", f1)
+                # mlflow.log_metric('recall',recall)
+
+
+                # Model registry does not work with file store
+                if tracking_url_type_store != "file":
+
+                    # Register the model
+                    # There are other ways to use the Model Registry, which depends on the use case,
+                    # please refer to the doc for more information:
+                    # https://mlflow.org/docs/latest/model-registry.html#api-workflow
+                    mlflow.sklearn.log_model(best_model, "model", registered_model_name=actual_model)
+                else:
+                    mlflow.sklearn.log_model(best_model, "model")
 
 
             if best_model_score<0.6:
