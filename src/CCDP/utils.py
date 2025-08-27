@@ -1,15 +1,19 @@
 import os
 import sys
-from src.CCDP.exception import CustomException
-from src.CCDP.logger import logging
+
+import numpy as np
 import pandas as pd
-from dotenv import load_dotenv
-from sklearn.model_selection import GridSearchCV
+import dill
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import GridSearchCV
+
+from src.CCDP.exception import CustomException
+
+from src.CCDP.logger import logging
+from dotenv import load_dotenv
 import pymysql
 
 import pickle
-import numpy as np
 
 
 load_dotenv()
@@ -91,7 +95,8 @@ def evaluate_models(X_train, y_train,X_test,y_test,models,param):
 def load_object(file_path):
     try:
         with open(file_path, "rb") as file_obj:
-            return pickle.load(file_obj)
+            # return pickle.load(file_obj)
+            return dill.load(file_obj)
 
     except Exception as e:
         raise CustomException(e, sys)

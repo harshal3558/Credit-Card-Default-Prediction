@@ -1,0 +1,152 @@
+<html>
+<head>
+    <title>Credit Card Default Prediction</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; }
+        input, select { width: 100%; padding: 8px; }
+        .btn { background-color: #007bff; color: white; padding: 10px; border: none; cursor: pointer; }
+        .btn:hover { background-color: #0056b3; }
+        fieldset { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; }
+        legend { font-size: 1.2em; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Credit Card Default Prediction Form</h1>
+    <form action="{{ url_for('predict_datapoint') }}" method="post">
+
+        <fieldset>
+            <legend>Basic Information</legend>
+            <div class="form-group">
+                <label>Credit Limit (LIMIT_BAL) - NT Dollars</label>
+                <input type="number" name="LIMIT_BAL" min="0" placeholder="e.g. 200000" required>
+            </div>
+
+            <div class="form-group">
+                <label>Gender (SEX)</label>
+                <select name="SEX" required>
+                    <option value="" disabled selected hidden>Select Gender...</option>
+                    <option value="1">Male</option>
+                    <option value="2">Female</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Education Level (EDUCATION)</label>
+                <select name="EDUCATION" required>
+                    <option value="" disabled selected hidden>Select Education...</option>
+                    <option value="1">Graduate School</option>
+                    <option value="2">University</option>
+                    <option value="3">High School</option>
+                    <option value="4">Others</option>
+
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Marital Status (MARRIAGE)</label>
+                <select name="MARRIAGE" required>
+                    <option value="" disabled selected hidden>Select Marital Status...</option>
+                    <option value="1">Married</option>
+                    <option value="2">Single</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Age</label>
+                <input type="number" name="AGE" min="18" placeholder="e.g. 35" required>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Repayment Status (-1 = pay duly, 1 = delay 1 month, ..., 9 = delay 9+ months)</legend>
+            <div class="form-group">
+                <label>PAY_0 (September)</label>
+                <input type="number" name="PAY_0" min="-1" max="9" placeholder="-1 to 9" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_2 (August)</label>
+                <input type="number" name="PAY_2" min="-1" max="9" placeholder="-1 to 9" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_3 (July)</label>
+                <input type="number" name="PAY_3" min="-1" max="9" placeholder="-1 to 9" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_4 (June)</label>
+                <input type="number" name="PAY_4" min="-1" max="9" placeholder="-1 to 9" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_5 (May)</label>
+                <input type="number" name="PAY_5" min="-1" max="9" placeholder="-1 to 9" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_6 (April)</label>
+                <input type="number" name="PAY_6" min="-1" max="9" placeholder="-1 to 9" required>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Bill Statement Amounts (NT Dollars)</legend>
+            <div class="form-group">
+                <label>BILL_AMT1 (Sept)</label>
+                <input type="number" name="BILL_AMT1" min="0" placeholder="e.g. 50000" required>
+            </div>
+            <div class="form-group">
+                <label>BILL_AMT2 (Aug)</label>
+                <input type="number" name="BILL_AMT2" min="0" placeholder="e.g. 40000" required>
+            </div>
+            <div class="form-group">
+                <label>BILL_AMT3 (July)</label>
+                <input type="number" name="BILL_AMT3" min="0" placeholder="e.g. 30000" required>
+            </div>
+            <div class="form-group">
+                <label>BILL_AMT4 (June)</label>
+                <input type="number" name="BILL_AMT4" min="0" placeholder="e.g. 25000" required>
+            </div>
+            <div class="form-group">
+                <label>BILL_AMT5 (May)</label>
+                <input type="number" name="BILL_AMT5" min="0" placeholder="e.g. 20000" required>
+            </div>
+            <div class="form-group">
+                <label>BILL_AMT6 (Apr)</label>
+                <input type="number" name="BILL_AMT6" min="0" placeholder="e.g. 15000" required>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Previous Payment Amounts (NT Dollars)</legend>
+            <div class="form-group">
+                <label>PAY_AMT1 (Sept)</label>
+                <input type="number" name="PAY_AMT1" min="0" placeholder="e.g. 5000" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_AMT2 (Aug)</label>
+                <input type="number" name="PAY_AMT2" min="0" placeholder="e.g. 4500" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_AMT3 (July)</label>
+                <input type="number" name="PAY_AMT3" min="0" placeholder="e.g. 3000" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_AMT4 (June)</label>
+                <input type="number" name="PAY_AMT4" min="0" placeholder="e.g. 2500" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_AMT5 (May)</label>
+                <input type="number" name="PAY_AMT5" min="0" placeholder="e.g. 2000" required>
+            </div>
+            <div class="form-group">
+                <label>PAY_AMT6 (Apr)</label>
+                <input type="number" name="PAY_AMT6" min="0" placeholder="e.g. 1500" required>
+            </div>
+        </fieldset>
+       
+
+        <button type="submit" class="btn">Predict Default</button>
+    </form>
+
+    <h2>Prediction result: {{ results }}</h2>
+</body>
+</html>

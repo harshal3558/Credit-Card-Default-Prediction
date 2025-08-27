@@ -11,5 +11,8 @@ xgboost
 mlflow
 ipykernel
 lightgbm
+dill
+mlflow == 2.21.0
+dagshub
 
 #-e .

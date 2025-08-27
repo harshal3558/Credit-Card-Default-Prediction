@@ -1,34 +1,63 @@
-from src.CCDP.logger import logging
-from src.CCDP.exception import CustomException
-from src.CCDP.components.data_ingestion import DataIngestion
-from src.CCDP.components.data_ingestion import DataIngestionConfig
-from src.CCDP.components.data_transformation import DataTransformation
-from src.CCDP.components.data_transformation import DataTransformationConfig
-from src.CCDP.components.model_tranier import ModelTrainerConfig
-from src.CCDP.components.model_tranier import ModelTrainer
+from flask import Flask, request, render_template
+import numpy as np
+import pandas as pd
 
-import sys
+from sklearn.preprocessing import StandardScaler
+from src.CCDP.pipelines.prediction_pipeline import CustomData, PredictPipeline
+
+application = Flask(__name__)
+
+app = application
+
+## Route for a home page
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/predictdata',methods=['GET','POST'])
+def predict_datapoint():
+    if request.method == 'GET':
+        return render_template('home.html')
+    else:
+        data = CustomData(
+            LIMIT_BAL = request.form.get('LIMIT_BAL'),
+            SEX = request.form.get('SEX'),
+            EDUCATION = request.form.get('EDUCATION'),
+            MARRIAGE = request.form.get('MARRIAGE'),
+            AGE = request.form.get('AGE'),
+            PAY_0 = request.form.get('PAY_0'),
+            PAY_2 = request.form.get('PAY_2'),
+            PAY_3 = request.form.get('PAY_3'),
+            PAY_4 = request.form.get('PAY_4'),
+            PAY_5 = request.form.get('PAY_5'),
+            PAY_6 = request.form.get('PAY_6'),
+            BILL_AMT1 = request.form.get('BILL_AMT1'),
+            BILL_AMT2 = request.form.get('BILL_AMT2'),
+            BILL_AMT3 = request.form.get('BILL_AMT3'),
+            BILL_AMT4 = request.form.get('BILL_AMT4'),
+            BILL_AMT5 = request.form.get('BILL_AMT5'),
+            BILL_AMT6 = request.form.get('BILL_AMT6'),
+            PAY_AMT1 = request.form.get('PAY_AMT1'),
+            PAY_AMT2 = request.form.get('PAY_AMT2'),
+            PAY_AMT3 = request.form.get('PAY_AMT3'),
+            PAY_AMT4 = request.form.get('PAY_AMT4'),
+            PAY_AMT5 = request.form.get('PAY_AMT5'),
+            PAY_AMT6 = request.form.get('PAY_AMT6'),
+            # payment = request.form.get('payment') # <-- THIS LINE ADDED
+
+        )
+        pred_df = data.get_data_as_data_frame()
+        print(pred_df)
+        print('Before Prediction')
+
+        predict_pipeline=PredictPipeline()
+        print("Mid Prediction")
+        results = predict_pipeline.predict(pred_df)
+        print("After Prediction")
+        return render_template('home.html',results=results[0])
+
 
 if __name__ == "__main__":
-    logging.info("The execution has started")
+    app.run(host="0.0.0.0",debug=True)
 
-    try:
-        # data_ingestion_config=DataIngestionConfig()
-        data_ingestion=DataIngestion() 
-        # data_ingestion.initiate_data_ingestion()
-        train_data_path,test_data_path=data_ingestion.initiate_data_ingestion()
-
-        # data_transformation_config=DataIngestionConfig()
-        data_transformation=DataTransformation()
-        # data_transformation.initiate_data_transformation(train_data_path,test_data_path)
-        train_arr,test_arr,_=data_transformation.initiate_data_transformation(train_data_path,test_data_path)
-        
-        ## Model Training
-
-        model_trainer=ModelTrainer()
-        print(model_trainer.initiate_model_trainer(train_arr,test_arr))
-
-
-    except Exception as e:
-        logging.info("Custom Exception")
-        raise CustomException(e,sys)
