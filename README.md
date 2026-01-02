@@ -1,6 +1,6 @@
 ## End to End Credit Card Default Prediction
 
-Steps for Implementation
+# Steps for Implementation
 
 * Data Exploration & Cleaning
 
