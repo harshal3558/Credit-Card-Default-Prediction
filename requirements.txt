@@ -14,5 +14,6 @@ lightgbm
 dill
 mlflow == 2.21.0
 dagshub
+pytest
 
 #-e .
