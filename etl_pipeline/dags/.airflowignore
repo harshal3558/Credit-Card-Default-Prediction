@@ -1,0 +1,4 @@
+# Ignore patterns for Airflow DAG processor
+__pycache__
+*.pyc
+.ipynb_checkpoints

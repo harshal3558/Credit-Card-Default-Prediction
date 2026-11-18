@@ -1,0 +1,10 @@
+apache-airflow-providers-postgres
+apache-airflow-providers-http
+pandas
+numpy
+scikit-learn
+psycopg2-binary
+pymysql
+python-dotenv
+kaggle
+pytest

@@ -1,0 +1,24 @@
+# Airflow configuration settings
+airflow:
+  connections:
+    - conn_id: postgres_default
+      conn_type: postgres
+      conn_host: postgres
+      conn_schema: airflow
+      conn_login: airflow
+      conn_password: airflow
+      conn_port: 5432
+    - conn_id: mysql_source
+      conn_type: mysql
+      conn_host: localhost
+      conn_schema: credit
+      conn_login: root
+      conn_password: password
+      conn_port: 3306
+  variables:
+    - key: outlier_iqr_multiplier
+      value: "1.5"
+    - key: target_column
+      value: "DEFAULT_PAYMENT_NEXT_MONTH"
+    - key: kaggle_dataset
+      value: "gauravtopre/credit-card-defaulter-prediction"

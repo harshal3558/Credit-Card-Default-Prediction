@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Intelligence | Explainable Default Prediction Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-base: #070a12;
+            --panel-bg: rgba(15, 23, 42, 0.78);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --accent: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.12);
+            --danger-border: rgba(239, 68, 68, 0.35);
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.12);
+            --success-border: rgba(16, 185, 129, 0.35);
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Strictly single page - NO window scroll */
+            background: radial-gradient(circle at 10% 10%, #0f172a 0%, #070a12 100%);
+            color: var(--text-main);
+        }
+
+        /* Top Navbar */
+        .navbar {
+            height: 54px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-logo {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #6366f1, #38bdf8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: white;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #f8fafc, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-tag {
+            font-size: 0.75rem;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #a5b4fc;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+
+        .presets {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            padding: 0.35rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .preset-btn.danger-btn:hover {
+            border-color: var(--danger);
+            color: #fca5a5;
+        }
+
+        .preset-btn.success-btn:hover {
+            border-color: var(--success);
+            color: #6ee7b7;
+        }
+
+        /* Main Workspace: 2-Column Split Screen */
+        .workspace {
+            height: calc(100vh - 54px);
+            display: grid;
+            grid-template-columns: 430px 1fr;
+            overflow: hidden;
+        }
+
+        /* Left Column: Form Panel */
+        .form-panel {
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border-right: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .form-header {
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-scrollable {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+
+        /* Custom Scrollbar */
+        .form-scrollable::-webkit-scrollbar,
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .form-scrollable::-webkit-scrollbar-track,
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .form-scrollable::-webkit-scrollbar-thumb,
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+
+        .field-group {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+        }
+
+        .group-heading {
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.65rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.65rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.55rem;
+        }
+
+        .input-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .input-box label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input, select {
+            background: rgba(3, 7, 18, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.45rem 0.65rem;
+            color: white;
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+            background: rgba(3, 7, 18, 0.9);
+        }
+
+        .form-footer {
+            padding: 0.85rem 1.25rem;
+            border-top: 1px solid var(--panel-border);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Right Column: Dashboard & Proof Stage */
+        .stage-panel {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: rgba(7, 10, 18, 0.6);
+            padding: 1rem 1.25rem;
+            gap: 0.85rem;
+        }
+
+        /* Empty Ready State */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            border: 2px dashed rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Verdict Hero Banner (Compact Top Bar) */
+        .verdict-bar {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .verdict-bar.default-verdict {
+            border-left: 4px solid var(--danger);
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.12) 0%, rgba(15, 23, 42, 0.7) 100%);
+        }
+
+        .verdict-bar.safe-verdict {
+            border-left: 4px solid var(--success);
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.7) 100%);
+        }
+
+        .verdict-left {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .verdict-badge {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            letter-spacing: 0.05em;
+        }
+
+        .default-verdict .verdict-badge {
+            background: rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .safe-verdict .verdict-badge {
+            background: rgba(16, 185, 129, 0.25);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .verdict-text {
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .default-verdict .verdict-text { color: #f87171; }
+        .safe-verdict .verdict-text { color: #34d399; }
+
+        .kpi-row {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .kpi-chip {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 8px;
+            padding: 0.35rem 0.75rem;
+            text-align: right;
+        }
+
+        .kpi-chip-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .kpi-chip-val {
+            font-size: 1.05rem;
+            font-weight: 800;
+            font-family: var(--font-mono);
+        }
+
+        /* Executive Summary Callout */
+        .exec-strip {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            line-height: 1.45;
+            color: #cbd5e1;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .exec-strip strong {
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        /* Navigation Tabs for Proof & Explanations */
+        .stage-tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.4rem;
+        }
+
+        .stage-tab {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 0.4rem 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .stage-tab:hover {
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .stage-tab.active {
+            color: white;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+        }
+
+        /* Tab Content Area: Perfectly sized to occupy remaining viewport */
+        .tab-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+            height: 100%;
+            width: 100%;
+        }
+
+        .tab-pane.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Pane 1: Plots View */
+        .plots-wrapper {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            overflow: hidden;
+        }
+
+        .plot-selector-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .plot-pill {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 0.3rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .plot-pill.active {
+            background: #1e293b;
+            color: #38bdf8;
+            border-color: #38bdf8;
+        }
+
+        .plot-viewport {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 0.5rem;
+            position: relative;
+        }
+
+        .plot-viewport img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .plot-caption-bar {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 0.45rem 0.85rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .plot-caption-bar strong {
+            color: #38bdf8;
+        }
+
+        /* Pane 2: Dual-Column Reasons View */
+        .reasons-wrapper {
+            height: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            overflow: hidden;
+        }
+
+        .reason-col {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .reason-col.pos {
+            border-top: 3px solid var(--danger);
+        }
+
+        .reason-col.neg {
+            border-top: 3px solid var(--success);
+        }
+
+        .col-head {
+            padding: 0.65rem 0.95rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.825rem;
+            font-weight: 700;
+        }
+
+        .pos .col-head { color: #f87171; }
+        .neg .col-head { color: #34d399; }
+
+        .col-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .reason-card {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 0.65rem 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .reason-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+
+        .card-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .impact-badge {
+            font-size: 0.725rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+        }
+
+        .pos-badge {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .neg-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .card-val {
+            display: inline-block;
+            font-size: 0.725rem;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 0.1rem 0.45rem;
+            border-radius: 3px;
+            margin-bottom: 0.35rem;
+        }
+
+        .card-desc {
+            font-size: 0.775rem;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <header class="navbar">
+        <div class="brand">
+            <div class="brand-logo">CI</div>
+            <div class="brand-title">Credit Intelligence</div>
+            <span class="brand-tag">Explainable AI &bull; ROC-AUC 0.784</span>
+        </div>
+
+        <div class="presets">
+            <span style="font-size:0.75rem; color:#94a3b8; margin-right:0.25rem;">Quick Presets:</span>
+            <button type="button" class="preset-btn danger-btn" onclick="loadPreset('high_risk')">
+                <span style="color:#ef4444;">&bull;</span> High-Risk Profile
+            </button>
+            <button type="button" class="preset-btn success-btn" onclick="loadPreset('safe')">
+                <span style="color:#10b981;">&bull;</span> Safe Profile
+            </button>
+            <button type="button" class="preset-btn" onclick="loadPreset('reset')">
+                Reset
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace (Single Page, 0 Window Scroll) -->
+    <main class="workspace">
+        <!-- Left Panel: Form Parameters -->
+        <section class="form-panel">
+            <div class="form-header">
+                <div class="form-title">
+                    <span style="width:8px; height:8px; border-radius:50%; background:var(--primary);"></span>
+                    Borrower Application Parameters
+                </div>
+                <span style="font-size:0.75rem; color:#94a3b8;">23 Features</span>
+            </div>
+
+            <form id="predictionForm" method="post" action="{{ url_for('predict_datapoint') }}" class="form-scrollable custom-scroll">
+                <!-- Group 1: Personal Profile & Credit Line -->
+                <div class="field-group">
+                    <div class="group-heading">1. Personal & Credit Profile</div>
+                    <div class="input-box" style="margin-bottom:0.6rem;">
+                        <label>Credit Limit (NT$)</label>
+                        <input type="number" id="LIMIT_BAL" name="LIMIT_BAL" value="{{ form_data.LIMIT_BAL if form_data else 50000 }}" required>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:0.6rem;">
+                        <div class="input-box">
+                            <label>Gender</label>
+                            <select id="SEX" name="SEX" required>
+                                <option value="1" {{ 'selected' if form_data and form_data.SEX == 1 else '' }}>Male</option>
+                                <option value="2" {{ 'selected' if not form_data or form_data.SEX == 2 else '' }}>Female</option>
+                            </select>
+                        </div>
+                        <div class="input-box">
+                            <label>Age</label>
+                            <input type="number" id="AGE" name="AGE" value="{{ form_data.AGE if form_data else 30 }}" required>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="input-box">
+                            <label>Education</label>
+                            <select id="EDUCATION" name="EDUCATION" required>
+                                <option value="1" {{ 'selected' if form_data and form_data.EDUCATION == 1 else '' }}>Graduate</option>
+                                <option value="2" {{ 'selected' if not form_data or form_data.EDUCATION == 2 else '' }}>University</option>
+                                <option value="3" {{ 'selected' if form_data and form_data.EDUCATION == 3 else '' }}>High School</option>
+                                <option value="4" {{ 'selected' if form_data and form_data.EDUCATION == 4 else '' }}>Others</option>
+                            </select>
+                        </div>
+                        <div class="input-box">
+                            <label>Marital Status</label>
+                            <select id="MARRIAGE" name="MARRIAGE" required>
+                                <option value="1" {{ 'selected' if form_data and form_data.MARRIAGE == 1 else '' }}>Married</option>
+                                <option value="2" {{ 'selected' if not form_data or form_data.MARRIAGE == 2 else '' }}>Single</option>
+                                <option value="3" {{ 'selected' if form_data and form_data.MARRIAGE == 3 else '' }}>Others</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group 2: Repayment Status History (6 Months) -->
+                <div class="field-group">
+                    <div class="group-heading">2. Repayment Status (Months Overdue: -1=Paid, 0=On-time, 1+=Late)</div>
+                    <div class="grid-3">
+                        <div class="input-box"><label>PAY_0 (Sept)</label><input type="number" id="PAY_0" name="PAY_0" value="{{ form_data.PAY_0 if form_data else 0 }}" required></div>
+                        <div class="input-box"><label>PAY_2 (Aug)</label><input type="number" id="PAY_2" name="PAY_2" value="{{ form_data.PAY_2 if form_data else 0 }}" required></div>
+                        <div class="input-box"><label>PAY_3 (July)</label><input type="number" id="PAY_3" name="PAY_3" value="{{ form_data.PAY_3 if form_data else 0 }}" required></div>
+                        <div class="input-box"><label>PAY_4 (June)</label><input type="number" id="PAY_4" name="PAY_4" value="{{ form_data.PAY_4 if form_data else 0 }}" required></div>
+                        <div class="input-box"><label>PAY_5 (May)</label><input type="number" id="PAY_5" name="PAY_5" value="{{ form_data.PAY_5 if form_data else 0 }}" required></div>
+                        <div class="input-box"><label>PAY_6 (Apr)</label><input type="number" id="PAY_6" name="PAY_6" value="{{ form_data.PAY_6 if form_data else 0 }}" required></div>
+                    </div>
+                </div>
+
+                <!-- Group 3: Bill Statements (6 Months) -->
+                <div class="field-group">
+                    <div class="group-heading">3. Bill Statement Amounts (NT$)</div>
+                    <div class="grid-3">
+                        <div class="input-box"><label>BILL_1 (Sept)</label><input type="number" id="BILL_AMT1" name="BILL_AMT1" value="{{ form_data.BILL_AMT1 if form_data else 20000 }}" required></div>
+                        <div class="input-box"><label>BILL_2 (Aug)</label><input type="number" id="BILL_AMT2" name="BILL_AMT2" value="{{ form_data.BILL_AMT2 if form_data else 19000 }}" required></div>
+                        <div class="input-box"><label>BILL_3 (July)</label><input type="number" id="BILL_AMT3" name="BILL_AMT3" value="{{ form_data.BILL_AMT3 if form_data else 18000 }}" required></div>
+                        <div class="input-box"><label>BILL_4 (June)</label><input type="number" id="BILL_AMT4" name="BILL_AMT4" value="{{ form_data.BILL_AMT4 if form_data else 17000 }}" required></div>
+                        <div class="input-box"><label>BILL_5 (May)</label><input type="number" id="BILL_AMT5" name="BILL_AMT5" value="{{ form_data.BILL_AMT5 if form_data else 16000 }}" required></div>
+                        <div class="input-box"><label>BILL_6 (Apr)</label><input type="number" id="BILL_AMT6" name="BILL_AMT6" value="{{ form_data.BILL_AMT6 if form_data else 15000 }}" required></div>
+                    </div>
+                </div>
+
+                <!-- Group 4: Payments Made (6 Months) -->
+                <div class="field-group">
+                    <div class="group-heading">4. Previous Payments (NT$)</div>
+                    <div class="grid-3">
+                        <div class="input-box"><label>PAY_1 (Sept)</label><input type="number" id="PAY_AMT1" name="PAY_AMT1" value="{{ form_data.PAY_AMT1 if form_data else 3000 }}" required></div>
+                        <div class="input-box"><label>PAY_2 (Aug)</label><input type="number" id="PAY_AMT2" name="PAY_AMT2" value="{{ form_data.PAY_AMT2 if form_data else 3000 }}" required></div>
+                        <div class="input-box"><label>PAY_3 (July)</label><input type="number" id="PAY_AMT3" name="PAY_AMT3" value="{{ form_data.PAY_AMT3 if form_data else 3000 }}" required></div>
+                        <div class="input-box"><label>PAY_4 (June)</label><input type="number" id="PAY_AMT4" name="PAY_AMT4" value="{{ form_data.PAY_AMT4 if form_data else 3000 }}" required></div>
+                        <div class="input-box"><label>PAY_5 (May)</label><input type="number" id="PAY_AMT5" name="PAY_AMT5" value="{{ form_data.PAY_AMT5 if form_data else 3000 }}" required></div>
+                        <div class="input-box"><label>PAY_6 (Apr)</label><input type="number" id="PAY_AMT6" name="PAY_AMT6" value="{{ form_data.PAY_AMT6 if form_data else 3000 }}" required></div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="form-footer">
+                <button type="button" id="submitBtn" class="submit-btn" onclick="executeAnalysis()">
+                    <span id="btnText">Analyze Risk & Generate Proof</span>
+                    <div class="spinner" id="btnSpinner"></div>
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Column: Results & Proof Dashboard (Single Screen) -->
+        <section class="stage-panel" id="stagePanel">
+            <!-- Empty Placeholder (Shown when no prediction is loaded) -->
+            <div class="empty-state" id="emptyState" style="{{ 'display: none;' if explanation else '' }}">
+                <div class="empty-icon">&bull;&bull;&bull;</div>
+                <h3 style="font-size:1.3rem; margin-bottom:0.5rem; color:#f1f5f9;">Ready for Credit Risk Analysis</h3>
+                <p style="color:#94a3b8; max-width:480px; font-size:0.9rem; line-height:1.6; margin-bottom:1.5rem;">
+                    Adjust applicant values on the left or click a preset button above to instantly generate default risk probability, why the model made its decision, and diagnostic visual proof plots.
+                </p>
+                <div style="display:flex; gap:0.75rem;">
+                    <button type="button" class="preset-btn danger-btn" onclick="loadPreset('high_risk'); executeAnalysis();">
+                        Test High-Risk Sample
+                    </button>
+                    <button type="button" class="preset-btn success-btn" onclick="loadPreset('safe'); executeAnalysis();">
+                        Test Safe Sample
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Dashboard Container -->
+            <div id="resultsContent" style="{{ 'display: flex; flex-direction: column; height: 100%; gap: 0.85rem; overflow: hidden;' if explanation else 'display: none; height: 100%; flex-direction: column; gap: 0.85rem; overflow: hidden;' }}">
+                <!-- 1. Top Verdict & KPI Banner -->
+                <div class="verdict-bar {{ 'default-verdict' if explanation and explanation.prediction == 1 else 'safe-verdict' }}" id="verdictBar">
+                    <div class="verdict-left">
+                        <span class="verdict-badge" id="verdictBadge">
+                            {{ 'DEFAULT PREDICTED' if explanation and explanation.prediction == 1 else 'NON-DEFAULT (SAFE)' }}
+                        </span>
+                        <div class="verdict-text" id="verdictText">
+                            {{ explanation.prediction_text if explanation else '' }}
+                        </div>
+                    </div>
+
+                    <div class="kpi-row">
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-label">Default Risk</div>
+                            <div class="kpi-chip-val" id="kpiDefault" style="color: {{ '#f87171' if explanation and explanation.prediction == 1 else '#38bdf8' }};">
+                                {{ explanation.default_probability if explanation else '0.0' }}%
+                            </div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-label">Safety Chance</div>
+                            <div class="kpi-chip-val" id="kpiSafety" style="color: {{ '#34d399' if explanation and explanation.prediction == 0 else '#94a3b8' }};">
+                                {{ explanation.safety_probability if explanation else '0.0' }}%
+                            </div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-label">Cutoff Threshold</div>
+                            <div class="kpi-chip-val" id="kpiThreshold" style="color: #f59e0b;">
+                                {{ explanation.threshold if explanation else '30.0' }}%
+                            </div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-label">Assigned Tier</div>
+                            <div class="kpi-chip-val" id="kpiTier" style="font-size:0.85rem; padding-top:0.15rem; color: {{ '#f87171' if explanation and explanation.prediction == 1 else '#34d399' }};">
+                                {{ explanation.risk_tier if explanation else '' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Executive Rationale Callout -->
+                <div class="exec-strip" id="execStrip">
+                    <strong>Model Decision Rationale:</strong>
+                    <span id="execSummaryText">{{ explanation.executive_summary if explanation else '' }}</span>
+                </div>
+
+                <!-- 3. Navigation Tabs -->
+                <div class="stage-tabs">
+                    <button type="button" class="stage-tab active" id="tabProofBtn" onclick="switchStageTab('proof')">
+                        Visual Proof Plots (3)
+                    </button>
+                    <button type="button" class="stage-tab" id="tabReasonsBtn" onclick="switchStageTab('reasons')">
+                        Why Positive / Negative? (Driver Breakdown)
+                    </button>
+                </div>
+
+                <!-- 4. Tab Content (Fits Viewport Perfectly) -->
+                <div class="tab-content">
+                    <!-- Tab Pane 1: Visual Proof Plots -->
+                    <div class="tab-pane active" id="paneProof">
+                        <div class="plots-wrapper">
+                            <!-- Plot Sub-Tabs -->
+                            <div class="plot-selector-row">
+                                <button type="button" class="plot-pill active" id="pillPlot1" onclick="switchPlot(1)">
+                                    Proof 1: Feature Impact Breakdown
+                                </button>
+                                <button type="button" class="plot-pill" id="pillPlot2" onclick="switchPlot(2)">
+                                    Proof 2: Default Risk Gauge
+                                </button>
+                                <button type="button" class="plot-pill" id="pillPlot3" onclick="switchPlot(3)">
+                                    Proof 3: Comparative Benchmark
+                                </button>
+                            </div>
+
+                            <!-- Plot Viewport Container -->
+                            <div class="plot-viewport">
+                                <img id="activePlotImg" src="{{ explanation.plot_feature_impact if explanation else '' }}" alt="Diagnostic Proof Plot">
+                            </div>
+
+                            <!-- Plot Caption -->
+                            <div class="plot-caption-bar" id="plotCaption">
+                                <strong>Proof 1 Interpretation:</strong> Diverging attribution plot decomposing exact feature push.
+                                <span style="color:#ef4444; font-weight:bold;">Red bars</span> push toward default risk, while
+                                <span style="color:#10b981; font-weight:bold;">green bars</span> protect against default.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Pane 2: Dual-Column Reasons Breakdown -->
+                    <div class="tab-pane" id="paneReasons">
+                        <div class="reasons-wrapper">
+                            <!-- Left Sub-Column: Reasons for Positive (Default Risk Escalators) -->
+                            <div class="reason-col pos">
+                                <div class="col-head">
+                                    <span>&bull; Drivers Increasing Default Risk</span>
+                                    <span style="font-size:0.75rem; color:#f87171;">Positive Push</span>
+                                </div>
+                                <div class="col-scroll custom-scroll" id="posReasonsList">
+                                    {% if explanation and explanation.positive_reasons %}
+                                        {% for r in explanation.positive_reasons %}
+                                        <div class="reason-card">
+                                            <div class="card-top">
+                                                <span class="card-name">{{ r.name }}</span>
+                                                <span class="impact-badge pos-badge">+{{ r.impact }} Risk</span>
+                                            </div>
+                                            <span class="card-val">Value: {{ r.value }}</span>
+                                            <div class="card-desc">{{ r.description }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Right Sub-Column: Reasons for Negative (Protective Strengths) -->
+                            <div class="reason-col neg">
+                                <div class="col-head">
+                                    <span>&bull; Drivers Protecting Against Default</span>
+                                    <span style="font-size:0.75rem; color:#34d399;">Safety Shields</span>
+                                </div>
+                                <div class="col-scroll custom-scroll" id="negReasonsList">
+                                    {% if explanation and explanation.negative_reasons %}
+                                        {% for r in explanation.negative_reasons %}
+                                        <div class="reason-card">
+                                            <div class="card-top">
+                                                <span class="card-name">{{ r.name }}</span>
+                                                <span class="impact-badge neg-badge">{{ r.impact }} Safe</span>
+                                            </div>
+                                            <span class="card-val">Value: {{ r.value }}</span>
+                                            <div class="card-desc">{{ r.description }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Client Script for Presets, Instant AJAX, and Tab Switching -->
+    <script>
+        // Preset configurations
+        const PRESETS = {
+            high_risk: {
+                LIMIT_BAL: 20000, SEX: 2, EDUCATION: 2, MARRIAGE: 1, AGE: 24,
+                PAY_0: 2, PAY_2: 2, PAY_3: -1, PAY_4: -1, PAY_5: -2, PAY_6: -2,
+                BILL_AMT1: 3913, BILL_AMT2: 3102, BILL_AMT3: 689, BILL_AMT4: 0, BILL_AMT5: 0, BILL_AMT6: 0,
+                PAY_AMT1: 0, PAY_AMT2: 689, PAY_AMT3: 0, PAY_AMT4: 0, PAY_AMT5: 0, PAY_AMT6: 0
+            },
+            safe: {
+                LIMIT_BAL: 250000, SEX: 1, EDUCATION: 1, MARRIAGE: 2, AGE: 38,
+                PAY_0: 0, PAY_2: 0, PAY_3: 0, PAY_4: 0, PAY_5: 0, PAY_6: 0,
+                BILL_AMT1: 5000, BILL_AMT2: 5000, BILL_AMT3: 5000, BILL_AMT4: 5000, BILL_AMT5: 5000, BILL_AMT6: 5000,
+                PAY_AMT1: 5000, PAY_AMT2: 5000, PAY_AMT3: 5000, PAY_AMT4: 5000, PAY_AMT5: 5000, PAY_AMT6: 5000
+            },
+            reset: {
+                LIMIT_BAL: 50000, SEX: 2, EDUCATION: 2, MARRIAGE: 2, AGE: 30,
+                PAY_0: 0, PAY_2: 0, PAY_3: 0, PAY_4: 0, PAY_5: 0, PAY_6: 0,
+                BILL_AMT1: 20000, BILL_AMT2: 19000, BILL_AMT3: 18000, BILL_AMT4: 17000, BILL_AMT5: 16000, BILL_AMT6: 15000,
+                PAY_AMT1: 3000, PAY_AMT2: 3000, PAY_AMT3: 3000, PAY_AMT4: 3000, PAY_AMT5: 3000, PAY_AMT6: 3000
+            }
+        };
+
+        let currentExplanation = null;
+        let currentPlotIdx = 1;
+
+        // If backend passed an explanation initially
+        {% if explanation %}
+        currentExplanation = {
+            prediction: {{ explanation.prediction }},
+            prediction_text: {{ explanation.prediction_text | tojson }},
+            default_probability: {{ explanation.default_probability }},
+            safety_probability: {{ explanation.safety_probability }},
+            threshold: {{ explanation.threshold }},
+            risk_tier: {{ explanation.risk_tier | tojson }},
+            executive_summary: {{ explanation.executive_summary | tojson }},
+            positive_reasons: {{ explanation.positive_reasons | tojson }},
+            negative_reasons: {{ explanation.negative_reasons | tojson }},
+            plot_feature_impact: {{ explanation.plot_feature_impact | tojson }},
+            plot_risk_gauge: {{ explanation.plot_risk_gauge | tojson }},
+            plot_benchmark: {{ explanation.plot_benchmark | tojson }}
+        };
+        {% endif %}
+
+        function loadPreset(key) {
+            const data = PRESETS[key];
+            if (!data) return;
+            for (const [k, v] of Object.entries(data)) {
+                const el = document.getElementById(k);
+                if (el) el.value = v;
+            }
+        }
+
+        // Asynchronous form submission - updates right pane instantly without scrolling/reloading
+        async function executeAnalysis() {
+            const form = document.getElementById('predictionForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+
+            submitBtn.disabled = true;
+            btnText.textContent = "Analyzing Risk & Plotting...";
+            btnSpinner.style.display = "inline-block";
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch("{{ url_for('predict_datapoint') }}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Analysis request failed with status ' + response.status);
+                }
+
+                const data = await response.json();
+                if (data.status === 'success' && data.explanation) {
+                    currentExplanation = data.explanation;
+                    renderDashboard(data.explanation);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error running credit analysis: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                btnText.textContent = "Analyze Risk & Generate Proof";
+                btnSpinner.style.display = "none";
+            }
+        }
+
+        function renderDashboard(exp) {
+            document.getElementById('emptyState').style.display = 'none';
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.style.display = 'flex';
+
+            // 1. Verdict Banner
+            const vBar = document.getElementById('verdictBar');
+            const vBadge = document.getElementById('verdictBadge');
+            const vText = document.getElementById('verdictText');
+
+            if (exp.prediction === 1) {
+                vBar.className = 'verdict-bar default-verdict';
+                vBadge.textContent = 'DEFAULT PREDICTED';
+                vText.textContent = exp.prediction_text;
+                document.getElementById('kpiDefault').style.color = '#f87171';
+                document.getElementById('kpiSafety').style.color = '#94a3b8';
+                document.getElementById('kpiTier').style.color = '#f87171';
+            } else {
+                vBar.className = 'verdict-bar safe-verdict';
+                vBadge.textContent = 'NON-DEFAULT (SAFE)';
+                vText.textContent = exp.prediction_text;
+                document.getElementById('kpiDefault').style.color = '#38bdf8';
+                document.getElementById('kpiSafety').style.color = '#34d399';
+                document.getElementById('kpiTier').style.color = '#34d399';
+            }
+
+            // 2. KPIs
+            document.getElementById('kpiDefault').textContent = exp.default_probability + '%';
+            document.getElementById('kpiSafety').textContent = exp.safety_probability + '%';
+            document.getElementById('kpiThreshold').textContent = exp.threshold + '%';
+            document.getElementById('kpiTier').textContent = exp.risk_tier;
+
+            // 3. Executive Rationale
+            document.getElementById('execSummaryText').textContent = exp.executive_summary;
+
+            // 4. Update Reasons Columns
+            const posList = document.getElementById('posReasonsList');
+            posList.innerHTML = '';
+            if (exp.positive_reasons && exp.positive_reasons.length > 0) {
+                exp.positive_reasons.forEach(r => {
+                    posList.innerHTML += `
+                        <div class="reason-card">
+                            <div class="card-top">
+                                <span class="card-name">${escapeHtml(r.name)}</span>
+                                <span class="impact-badge pos-badge">+${r.impact} Risk</span>
+                            </div>
+                            <span class="card-val">Value: ${escapeHtml(r.value)}</span>
+                            <div class="card-desc">${escapeHtml(r.description)}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                posList.innerHTML = '<p style="color:#94a3b8; font-size:0.8rem; padding:0.5rem;">No significant adverse factors found.</p>';
+            }
+
+            const negList = document.getElementById('negReasonsList');
+            negList.innerHTML = '';
+            if (exp.negative_reasons && exp.negative_reasons.length > 0) {
+                exp.negative_reasons.forEach(r => {
+                    negList.innerHTML += `
+                        <div class="reason-card">
+                            <div class="card-top">
+                                <span class="card-name">${escapeHtml(r.name)}</span>
+                                <span class="impact-badge neg-badge">${r.impact} Safe</span>
+                            </div>
+                            <span class="card-val">Value: ${escapeHtml(r.value)}</span>
+                            <div class="card-desc">${escapeHtml(r.description)}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                negList.innerHTML = '<p style="color:#94a3b8; font-size:0.8rem; padding:0.5rem;">No strong protective factors identified.</p>';
+            }
+
+            // 5. Update Active Plot
+            switchPlot(currentPlotIdx);
+        }
+
+        function switchStageTab(tab) {
+            document.getElementById('tabProofBtn').classList.toggle('active', tab === 'proof');
+            document.getElementById('tabReasonsBtn').classList.toggle('active', tab === 'reasons');
+
+            document.getElementById('paneProof').classList.toggle('active', tab === 'proof');
+            document.getElementById('paneReasons').classList.toggle('active', tab === 'reasons');
+        }
+
+        function switchPlot(idx) {
+            currentPlotIdx = idx;
+            document.getElementById('pillPlot1').classList.toggle('active', idx === 1);
+            document.getElementById('pillPlot2').classList.toggle('active', idx === 2);
+            document.getElementById('pillPlot3').classList.toggle('active', idx === 3);
+
+            const img = document.getElementById('activePlotImg');
+            const cap = document.getElementById('plotCaption');
+
+            if (!currentExplanation) return;
+
+            if (idx === 1) {
+                img.src = currentExplanation.plot_feature_impact;
+                cap.innerHTML = '<strong>Proof 1 Interpretation:</strong> Diverging attribution plot decomposing exact feature push. ' +
+                                '<span style="color:#ef4444; font-weight:bold;">Red bars</span> push toward default risk, while ' +
+                                '<span style="color:#10b981; font-weight:bold;">green bars</span> protect against default.';
+            } else if (idx === 2) {
+                img.src = currentExplanation.plot_risk_gauge;
+                cap.innerHTML = '<strong>Proof 2 Interpretation:</strong> Risk probability gauge displaying the applicant’s calculated risk (' +
+                                '<strong>' + currentExplanation.default_probability + '%</strong>) against the calibrated decision threshold (' +
+                                '<strong>' + currentExplanation.threshold + '%</strong>).';
+            } else if (idx === 3) {
+                img.src = currentExplanation.plot_benchmark;
+                cap.innerHTML = '<strong>Proof 3 Interpretation:</strong> Comparative population benchmark contrasting this borrower’s metrics ' +
+                                'against baseline historical averages for defaulted vs non-defaulted accounts.';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
