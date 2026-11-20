@@ -14,6 +14,7 @@ from sklearn.ensemble import (
     BaggingClassifier,
     HistGradientBoostingClassifier,
 )
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
@@ -93,6 +94,35 @@ class ModelTrainer:
                 f"Test feature dim: {X_test.shape}"
             )
 
+            # ══════════════════════════════════════════════════════════════════
+            # SMOTE — Synthetic Minority Oversampling for class imbalance
+            # Applied AFTER preprocessing (on the scaled/selected features)
+            # Applied BEFORE model training (not inside CV to keep it simple)
+            # ══════════════════════════════════════════════════════════════════
+            class_counts = np.unique(y_train, return_counts=True)
+            logging.info(
+                f"Class distribution before SMOTE: "
+                f"{dict(zip(class_counts[0].astype(int), class_counts[1]))}"
+            )
+            print(f"\n⚖️  Class dist before SMOTE: {dict(zip(class_counts[0].astype(int), class_counts[1]))}")
+
+            try:
+                from imblearn.over_sampling import SMOTE
+                smote = SMOTE(random_state=42, k_neighbors=5)
+                X_train, y_train = smote.fit_resample(X_train, y_train)
+                after_counts = np.unique(y_train, return_counts=True)
+                logging.info(
+                    f"Class distribution after SMOTE: "
+                    f"{dict(zip(after_counts[0].astype(int), after_counts[1]))}"
+                )
+                print(f"⚖️  Class dist after  SMOTE: {dict(zip(after_counts[0].astype(int), after_counts[1]))}")
+                print(f"   Training samples: {len(X_train)} (was {len(train_array) - 1})\n")
+            except ImportError:
+                logging.warning(
+                    "imbalanced-learn not installed — SMOTE skipped. "
+                    "Install with: pip install imbalanced-learn"
+                )
+
             # ── Flag: set TRAIN_DL_MODELS=1 to include PyTorch deep learning models ──
             # DL models are skipped by default to keep CI fast (~10s vs ~5min).
             # To enable: set env var TRAIN_DL_MODELS=1 before running python main.py
@@ -134,9 +164,9 @@ class ModelTrainer:
                 ),
 
                 # ── SVM ───────────────────────────────────────────────────
-                "SVM": SVC(
-                    probability=True, class_weight='balanced',
-                    kernel='rbf', random_state=42,
+                "SVM": CalibratedClassifierCV(
+                    SVC(class_weight='balanced', kernel='rbf', random_state=42),
+                    ensemble=False,
                 ),
 
                 # ── Lazy / Distance ────────────────────────────────────────
@@ -234,8 +264,8 @@ class ModelTrainer:
                     "learning_rate": [0.5, 1.0],
                 },
                 "SVM": {
-                    "C": [0.5, 1.0],
-                    "gamma": ["scale"],
+                    "estimator__C": [0.5, 1.0],
+                    "estimator__gamma": ["scale"],
                 },
                 "K-Nearest Neighbors": {
                     "n_neighbors": [5, 7, 11],
@@ -329,6 +359,25 @@ class ModelTrainer:
             )
             print(f"\n📈 Final Metrics: Accuracy={accuracy:.4f}  Precision={precision:.4f}  "
                   f"Recall={recall:.4f}  F1={f1:.4f}")
+
+            # ── Feature importance (tree models) or coefficients (linear models) ──
+            print("\n🔍 Feature Importance / Coefficients:")
+            if hasattr(best_model, 'feature_importances_'):
+                importances = best_model.feature_importances_
+                top_idx = np.argsort(importances)[::-1][:10]
+                for rank, idx in enumerate(top_idx, 1):
+                    bar = '█' * int(importances[idx] * 100)
+                    print(f"   {rank:2d}. Feature[{idx:2d}]  {importances[idx]:.4f}  {bar}")
+                logging.info("Top 10 feature importances: " +
+                    str([(int(i), round(float(importances[i]), 4)) for i in top_idx]))
+            elif hasattr(best_model, 'coef_'):
+                coefs = np.abs(best_model.coef_[0]) if best_model.coef_.ndim > 1 else np.abs(best_model.coef_)
+                top_idx = np.argsort(coefs)[::-1][:10]
+                for rank, idx in enumerate(top_idx, 1):
+                    bar = '█' * int(coefs[idx] / (coefs.max() + 1e-8) * 30)
+                    print(f"   {rank:2d}. Feature[{idx:2d}]  |coef|={coefs[idx]:.4f}  {bar}")
+                logging.info("Top 10 abs coefficients: " +
+                    str([(int(i), round(float(coefs[i]), 4)) for i in top_idx]))
 
             # ── Save best model ────────────────────────────────────────────
             save_object(
