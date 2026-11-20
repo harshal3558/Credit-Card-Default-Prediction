@@ -118,17 +118,17 @@ class ModelTrainer:
             )
             logging.info(f"Model saved locally at: {self.model_trainer_config.trained_model_file_path}")
 
-            # MLflow and DagsHub logging (with safe fallback)
-            if MLFLOW_AVAILABLE:
+            # MLflow and DagsHub logging — only runs when credentials are set
+            dagshub_token = os.getenv("DAGSHUB_USER_TOKEN")
+            mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
+
+            if MLFLOW_AVAILABLE and (dagshub_token or mlflow_uri):
                 try:
+                    os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"
                     mlflow.set_registry_uri("https://dagshub.com/harshal3558/Credit-Card-Default-Prediction.mlflow")
                     tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
 
-                    dagshub_token = os.getenv("DAGSHUB_USER_TOKEN")
-                    if dagshub_token or os.getenv("MLFLOW_TRACKING_URI"):
-                        dagshub.init(repo_owner='harshal3558', repo_name='Credit-Card-Default-Prediction', mlflow=True)
-                    else:
-                        logging.info("Running local MLflow tracking without remote hang.")
+                    dagshub.init(repo_owner='harshal3558', repo_name='Credit-Card-Default-Prediction', mlflow=True)
 
                     with mlflow.start_run():
                         mlflow.log_params(best_model.get_params())
@@ -143,8 +143,12 @@ class ModelTrainer:
                             mlflow.sklearn.log_model(best_model, "model", registered_model_name=best_model_name)
                         else:
                             mlflow.sklearn.log_model(best_model, "model")
+
+                    logging.info("MLflow / DagsHub experiment logged successfully.")
                 except Exception as mlflow_err:
-                    logging.warning(f"MLflow / DagsHub tracking skipped due to: {mlflow_err}")
+                    logging.warning(f"MLflow / DagsHub tracking skipped: {mlflow_err}")
+            else:
+                logging.info("MLflow tracking skipped — set DAGSHUB_USER_TOKEN to enable remote experiment logging.")
 
             return accuracy
 

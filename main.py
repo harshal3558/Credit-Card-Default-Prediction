@@ -1,3 +1,6 @@
+import os
+os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"  # Suppress MLflow stderr hint
+
 from src.CCDP.logger import logging
 from src.CCDP.exception import CustomException
 from src.CCDP.components.data_ingestion import DataIngestion
