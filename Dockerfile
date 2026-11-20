@@ -1,5 +1,4 @@
 
-
 # =========================
 # 1. Base image
 # =========================
@@ -10,6 +9,9 @@ FROM python:3.10-slim
 # =========================
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+ENV MLFLOW_DISABLE_AGENT_HINT=1
+ENV MLFLOW_TRACKING_URI=""
 
 # =========================
 # 3. Set working directory
@@ -17,35 +19,38 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # =========================
-# 4. Install system dependencies
-# (required for numpy, pandas, sklearn)
+# 4. System dependencies
 # =========================
 RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================
-# 5. Copy requirements first (Docker cache optimization)
+# 5. Install Python deps (cached layer)
 # =========================
 COPY requirements.txt .
-
-# =========================
-# 6. Install Python dependencies
-# =========================
 RUN pip install --no-cache-dir -r requirements.txt
 
 # =========================
-# 7. Copy project files
+# 6. Copy project source
 # =========================
 COPY . .
 
+# Install the CCDP package in editable mode
+RUN pip install --no-cache-dir -e .
+
 # =========================
-# 8. Expose port (Flask/FastAPI)
+# 7. Train model at build time
+#    (generates artifacts/model.pkl & artifacts/preprocessor.pkl)
+# =========================
+RUN python main.py
+
+# =========================
+# 8. Expose port
 # =========================
 EXPOSE 5000
 
 # =========================
-# 9. Run application
+# 9. Run with Gunicorn (production WSGI server)
 # =========================
-# CMD ["python", "application.py"]
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "application:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "120", "application:app"]
