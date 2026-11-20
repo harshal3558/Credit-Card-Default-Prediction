@@ -1,0 +1,60 @@
+# Python cache
+__pycache__/
+*.py[codz]
+*.pyo
+*.pyd
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+denv/
+cenv/
+
+# Artifacts (regenerated at runtime)
+artifacts/model.pkl
+artifacts/preprocessor.pkl
+artifacts/raw.csv
+artifacts/train.csv
+artifacts/test.csv
+
+# PDF files
+*.pdf
+
+# Logs
+logs/
+*.log
+
+# MLflow
+mlruns/
+
+# Tests (not needed in container)
+tests/
+
+# Git
+.git/
+.gitignore
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Environment variables
+.env
+.envrc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# CI / coverage
+.pytest_cache/
+.coverage
+htmlcov/
