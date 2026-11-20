@@ -1,2 +1,6 @@
+# Large ML artifacts — tracked via DVC, not Git
 /model.pkl
+/preprocessor.pkl
 /raw.csv
+/train.csv
+/test.csv
