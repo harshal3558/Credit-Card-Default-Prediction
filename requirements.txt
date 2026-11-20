@@ -31,3 +31,8 @@ pytest>=7.4.0
 # Dev / Notebook (not needed in production — kept for completeness)
 ipykernel
 seaborn
+
+# Deep Learning (optional — required only for dl_model.py PyTorch classifiers)
+# Uncomment to enable DeepMLPClassifier, ResNetTabularClassifier, AttentionMLPClassifier:
+# torch>=2.0.0
+# To enable DL models at training time: set env var TRAIN_DL_MODELS=1
