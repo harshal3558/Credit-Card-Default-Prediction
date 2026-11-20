@@ -29,7 +29,7 @@ class FeatureEngineering(BaseEstimator, TransformerMixin):
         # Education: 0, 5, 6 are undocumented / others -> map to 4 (Others)
         if 'EDUCATION' in df.columns:
             df['EDUCATION'] = df['EDUCATION'].replace([0, 5, 6], 4)
-        
+
         # Marriage: 0 is undocumented -> map to 3 (Others)
         if 'MARRIAGE' in df.columns:
             df['MARRIAGE'] = df['MARRIAGE'].replace(0, 3)
@@ -52,7 +52,7 @@ class FeatureEngineering(BaseEstimator, TransformerMixin):
             df['AVG_PAY_DELAY'] = df[pay_cols].mean(axis=1)
             df['MAX_PAY_DELAY'] = df[pay_cols].max(axis=1)
             df['NUM_MONTHS_DELAYED'] = (df[pay_cols] > 0).sum(axis=1)
-            
+
             # Recency-weighted delay (recent months carry higher penalty)
             weights = np.linspace(len(pay_cols), 1, len(pay_cols), dtype=float)
             df['RECENCY_WEIGHTED_DELAY'] = (df[pay_cols] * weights).sum(axis=1) / weights.sum()
@@ -64,7 +64,7 @@ class FeatureEngineering(BaseEstimator, TransformerMixin):
         if bill_cols:
             df['TOTAL_BILL_AMT'] = df[bill_cols].sum(axis=1)
             df['AVG_BILL_AMT'] = df[bill_cols].mean(axis=1)
-            
+
             if 'LIMIT_BAL' in df.columns:
                 # Safe ratio division with reasonable bounds
                 df['CREDIT_UTILIZATION_RECENT'] = np.clip(
@@ -73,7 +73,7 @@ class FeatureEngineering(BaseEstimator, TransformerMixin):
                 df['AVG_CREDIT_UTILIZATION'] = np.clip(
                     (df['TOTAL_BILL_AMT'] / float(len(bill_cols))) / (df['LIMIT_BAL'] + 1.0), -2.0, 5.0
                 )
-            
+
             if 'BILL_AMT1' in df.columns and 'BILL_AMT6' in df.columns:
                 df['BILL_TREND'] = df['BILL_AMT1'] - df['BILL_AMT6']
 

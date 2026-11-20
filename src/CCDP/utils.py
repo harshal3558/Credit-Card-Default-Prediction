@@ -16,6 +16,7 @@ user = os.getenv("user")
 password = os.getenv("password")
 db = os.getenv('db')
 
+
 def read_sql_data():
     logging.info("Reading SQL database started")
     try:
@@ -33,6 +34,7 @@ def read_sql_data():
     except Exception as ex:
         raise CustomException(ex, sys)
 
+
 def save_object(file_path, obj):
     try:
         dir_path = os.path.dirname(file_path)
@@ -41,6 +43,7 @@ def save_object(file_path, obj):
             pickle.dump(obj, file_obj)
     except Exception as e:
         raise CustomException(e, sys)
+
 
 def evaluate_models(X_train, y_train, X_test, y_test, models, param):
     try:
@@ -55,7 +58,7 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
                 gs = GridSearchCV(model, para, cv=3, scoring='roc_auc', n_jobs=-1)
                 gs.fit(X_train, y_train)
                 model.set_params(**gs.best_params_)
-            
+
             model.fit(X_train, y_train)
 
             if hasattr(model, "predict_proba"):
@@ -70,6 +73,7 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
         return report
     except Exception as e:
         raise CustomException(e, sys)
+
 
 def load_object(file_path):
     try:

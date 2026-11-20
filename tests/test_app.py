@@ -5,8 +5,6 @@ sys.path.append(os.getcwd())
 
 from application import app
 
-from application import app
-
 def test_home_page():
     client = app.test_client()
     response = client.get("/")

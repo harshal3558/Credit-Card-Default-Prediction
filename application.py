@@ -17,7 +17,7 @@ def predict_datapoint():
         return render_template('home.html')
     else:
         req_data = request.form if request.form else (request.get_json() or {})
-        
+
         form_data = {
             'LIMIT_BAL': int(req_data.get('LIMIT_BAL', 50000)),
             'SEX': int(req_data.get('SEX', 1)),
@@ -44,12 +44,12 @@ def predict_datapoint():
             'PAY_AMT6': int(req_data.get('PAY_AMT6', 3000))
         }
         data = CustomData(**form_data)
-        
+
         pred_df = data.get_data_as_data_frame()
 
         predict_pipeline = PredictPipeline()
         explanation = predict_pipeline.predict_with_explanation(pred_df)
-        
+
         # If client requested JSON (e.g. from fetch/AJAX)
         if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
             return jsonify({

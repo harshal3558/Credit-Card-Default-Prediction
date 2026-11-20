@@ -24,7 +24,7 @@ class DataIngestion:
     def initiate_data_ingestion(self, run_etl_if_missing: bool = True):
         try:
             etl_path = self.ingestion_config.etl_data_path
-            
+
             # If ETL transformed output does not exist, trigger the standalone ETL pipeline
             if not os.path.exists(etl_path) and run_etl_if_missing:
                 logging.info(f"ETL dataset not found at {etl_path}. Invoking ETL pipeline runner...")
@@ -59,4 +59,3 @@ class DataIngestion:
 
         except Exception as e:
             raise CustomException(e, sys)
-        
