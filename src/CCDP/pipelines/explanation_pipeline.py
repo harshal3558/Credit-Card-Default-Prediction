@@ -78,6 +78,10 @@ class ModelExplainer:
 
     def _extract_feature_names(self):
         try:
+            if hasattr(self.preprocessor, "selected_feature_names_") and self.preprocessor.selected_feature_names_:
+                return list(self.preprocessor.selected_feature_names_)
+            if hasattr(self.preprocessor, "get_feature_names_out"):
+                return list(self.preprocessor.get_feature_names_out())
             if hasattr(self.preprocessor, "named_steps") and "feature_eng" in self.preprocessor.named_steps:
                 fe = self.preprocessor.named_steps["feature_eng"]
                 if hasattr(fe, "expected_columns") and fe.expected_columns:
@@ -86,7 +90,21 @@ class ModelExplainer:
                 return list(self.model.feature_names_in_)
         except Exception:
             pass
-        return [f"Feature_{i}" for i in range(getattr(self.model, "n_features_in_", 34))]
+        return [f"Feature_{i}" for i in range(getattr(self.model, "n_features_in_", 20))]
+
+    def _unwrap_base_estimator(self, model):
+        """Unwraps CalibratedClassifierCV / FrozenEstimator / Pipeline to access underlying tree or linear model."""
+        est = model
+        for _ in range(4):
+            if hasattr(est, "calibrated_classifiers_") and est.calibrated_classifiers_:
+                est = est.calibrated_classifiers_[0].estimator
+            elif hasattr(est, "estimator"):
+                est = est.estimator
+            elif hasattr(est, "named_steps"):
+                est = list(est.named_steps.values())[-1]
+            else:
+                break
+        return est
 
     def _compute_attributions(self, X_transformed):
         """
@@ -97,14 +115,15 @@ class ModelExplainer:
         n_features = X_arr.shape[1]
         contributions = np.zeros(n_features, dtype=float)
         base_value = 0.0
+        target_model = self._unwrap_base_estimator(self.model)
 
         # Case 1: Gradient Boosting Classifier
-        if hasattr(self.model, "estimators_") and len(self.model.estimators_) > 0 and hasattr(self.model.estimators_[0], "__len__"):
-            raw_init = self.model._raw_predict_init(X_arr)[0, 0]
-            lr = self.model.learning_rate
+        if hasattr(target_model, "estimators_") and len(target_model.estimators_) > 0 and hasattr(target_model.estimators_[0], "__len__"):
+            raw_init = target_model._raw_predict_init(X_arr)[0, 0]
+            lr = target_model.learning_rate
             base_value = raw_init
 
-            for stage in self.model.estimators_:
+            for stage in target_model.estimators_:
                 tree = stage[0].tree_
                 node_indicator = tree.decision_path(X_arr).toarray()[0]
                 nodes = np.where(node_indicator == 1)[0]
@@ -116,10 +135,10 @@ class ModelExplainer:
                         contributions[feat] += lr * (tree.value[c, 0, 0] - tree.value[p, 0, 0])
 
         # Case 2: Random Forest Classifier
-        elif hasattr(self.model, "estimators_") and len(self.model.estimators_) > 0 and hasattr(self.model.estimators_[0], "tree_"):
-            n_estimators = len(self.model.estimators_)
+        elif hasattr(target_model, "estimators_") and len(target_model.estimators_) > 0 and hasattr(target_model.estimators_[0], "tree_"):
+            n_estimators = len(target_model.estimators_)
             base_vals = []
-            for dt in self.model.estimators_:
+            for dt in target_model.estimators_:
                 tree = dt.tree_
                 node_indicator = tree.decision_path(X_arr).toarray()[0]
                 nodes = np.where(node_indicator == 1)[0]
@@ -134,14 +153,14 @@ class ModelExplainer:
             base_value = float(np.mean(base_vals))
 
         # Case 3: Logistic Regression / Linear Models
-        elif hasattr(self.model, "coef_"):
-            coef = self.model.coef_[0]
+        elif hasattr(target_model, "coef_"):
+            coef = target_model.coef_[0]
             contributions = coef * X_arr[0]
-            base_value = float(self.model.intercept_[0]) if hasattr(self.model, "intercept_") else 0.0
+            base_value = float(target_model.intercept_[0]) if hasattr(target_model, "intercept_") else 0.0
 
         # Fallback: Feature importances heuristic
         else:
-            importances = getattr(self.model, "feature_importances_", np.ones(n_features) / n_features)
+            importances = getattr(target_model, "feature_importances_", np.ones(n_features) / n_features)
             contributions = (X_arr[0] - np.mean(X_arr[0])) * importances
             base_value = 0.5
 

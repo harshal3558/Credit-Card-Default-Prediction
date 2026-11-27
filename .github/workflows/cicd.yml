@@ -50,7 +50,7 @@ jobs:
 
     - name: Run pytest suite
       run: |
-        python -m pytest tests/test_app.py -v --tb=short
+        python -m pytest tests/test_app.py tests/test_senior_ds_pipeline.py -v --tb=short
 
   # ─────────────────────────────────────────────────────────────
   # JOB 2: Build & Push Docker image (only on main branch push)

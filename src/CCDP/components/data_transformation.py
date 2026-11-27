@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn.preprocessing import RobustScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+from functools import partial
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 
@@ -154,6 +155,13 @@ class FeatureEngineering(BaseEstimator, TransformerMixin):
         except Exception as e:
             raise CustomException(e, sys)
 
+    def get_feature_names_out(self, input_features=None):
+        if self.expected_columns is not None:
+            return np.asarray(self.expected_columns, dtype=object)
+        if input_features is not None:
+            return np.asarray(input_features, dtype=object)
+        return np.asarray([], dtype=object)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 2 — Correlation-based Feature Selection
@@ -214,6 +222,12 @@ class CorrelationSelector(BaseEstimator, TransformerMixin):
         except Exception as e:
             raise CustomException(e, sys)
 
+    def get_feature_names_out(self, input_features=None):
+        if input_features is not None:
+            arr = np.asarray(input_features, dtype=object)
+            return arr[self.cols_to_keep_]
+        return np.asarray([f"feature_{i}" for i in self.cols_to_keep_], dtype=object)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 3 — Mutual Information Feature Selection (SelectKBest)
@@ -247,7 +261,8 @@ class MutualInfoSelector(BaseEstimator, TransformerMixin):
             X = np.array(X, dtype=np.float64)
             k_actual = min(self.k, X.shape[1])
             self.selector_ = SelectKBest(
-                mutual_info_classif, k=k_actual
+                partial(mutual_info_classif, random_state=self.random_state),
+                k=k_actual,
             )
             self.selector_.fit(X, y)
 
@@ -271,6 +286,12 @@ class MutualInfoSelector(BaseEstimator, TransformerMixin):
             return self.selector_.transform(np.array(X, dtype=np.float64))
         except Exception as e:
             raise CustomException(e, sys)
+
+    def get_feature_names_out(self, input_features=None):
+        if input_features is not None:
+            arr = np.asarray(input_features, dtype=object)
+            return arr[self.selected_indices_]
+        return np.asarray([f"feature_{i}" for i in self.selected_indices_], dtype=object)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -370,6 +391,16 @@ class DataTransformation:
             logging.info("Fitting and transforming training data...")
             # Pass y_train so MutualInfoSelector can compute MI scores
             X_train_arr = preprocessing_obj.fit_transform(X_train, y_train)
+
+            # Propagate exact selected feature names through the pipeline
+            try:
+                selected_names = list(preprocessing_obj.get_feature_names_out())
+            except Exception:
+                fe_cols = preprocessing_obj.named_steps['feature_eng'].get_feature_names_out()
+                corr_cols = preprocessing_obj.named_steps['corr_selector'].get_feature_names_out(fe_cols)
+                selected_names = list(preprocessing_obj.named_steps['mi_selector'].get_feature_names_out(corr_cols))
+            preprocessing_obj.selected_feature_names_ = selected_names
+            logging.info(f"Selected {len(selected_names)} features: {selected_names}")
 
             logging.info("Transforming test data (no fit on test)...")
             X_test_arr = preprocessing_obj.transform(X_test)

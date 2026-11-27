@@ -1,4 +1,6 @@
 from flask import Flask, request, render_template, jsonify
+import json
+import os
 import pandas as pd
 import numpy as np
 
@@ -63,6 +65,33 @@ def predict_datapoint():
                                results=explanation['prediction_text'],
                                explanation=explanation,
                                form_data=form_data)
+
+@app.route('/health', methods=['GET'])
+def health():
+    model_ready = os.path.exists(os.path.join('artifacts', 'model.pkl'))
+    preprocessor_ready = os.path.exists(os.path.join('artifacts', 'preprocessor.pkl'))
+    return jsonify({
+        'status': 'healthy' if (model_ready and preprocessor_ready) else 'degraded',
+        'model_loaded': model_ready,
+        'preprocessor_loaded': preprocessor_ready,
+    }), (200 if (model_ready and preprocessor_ready) else 503)
+
+
+@app.route('/monitoring', methods=['GET'])
+def monitoring():
+    drift_path = os.path.join('artifacts', 'drift_report.json')
+    gov_path = os.path.join('artifacts', 'governance_report.json')
+    payload = {}
+    if os.path.exists(drift_path):
+        with open(drift_path, 'r', encoding='utf-8') as f:
+            payload['drift_report'] = json.load(f)
+    if os.path.exists(gov_path):
+        with open(gov_path, 'r', encoding='utf-8') as f:
+            payload['governance_report'] = json.load(f)
+    if not payload:
+        return jsonify({'status': 'unavailable', 'message': 'Run python main.py to generate reports.'}), 404
+    return jsonify(payload), 200
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
