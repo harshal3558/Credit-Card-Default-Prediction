@@ -156,3 +156,4 @@ __pypackages__/
 
 # PDF files
 *.pdf
+-e "\nlogs/\nmlruns/\nartifacts/" 
