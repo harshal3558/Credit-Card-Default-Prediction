@@ -1,4 +1,4 @@
-﻿# ðŸ’³ Credit Card Default Prediction System (CCDP)
+﻿# Credit Card Default Prediction System (CCDP)
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0%2B-000000?style=for-the-badge&logo=flask&logoColor=white)
@@ -12,7 +12,7 @@ An end-to-end enterprise Machine Learning solution designed to predict the proba
 
 ---
 
-## ðŸ“Š End-to-End System Architecture
+## End-to-End System Architecture
 
 ```mermaid
 flowchart TD
@@ -41,7 +41,7 @@ flowchart TD
 
 ---
 
-## âœ¨ Key Features
+## Key Features
 
 - **Automated ETL Pipeline**: Orchestrated using **Apache Airflow DAGs** (TaskFlow API) and a **Standalone Python Runner** with automatic schema standardization, categorical mapping, and data cleaning.
 - **Financial Feature Engineering**: Calculates credit utilization, debt-to-bill ratios, repayment delay metrics, bill trajectory trends, and age demographics.
@@ -53,7 +53,7 @@ flowchart TD
 
 ---
 
-## ðŸ“ˆ Financial Risk Features Engineered
+## Financial Risk Features Engineered
 
 | Feature Name | Description | Calculation Logic |
 | :--- | :--- | :--- |
@@ -68,7 +68,7 @@ flowchart TD
 
 ---
 
-## ðŸ† Model Performance & Evaluation Results
+## Model Performance & Evaluation Results
 
 The models were trained and tuned using **3-fold Cross-Validation** with **GridSearchCV**, evaluated on test set **ROC-AUC** (Receiver Operating Characteristic - Area Under Curve):
 
@@ -82,7 +82,7 @@ The models were trained and tuned using **3-fold Cross-Validation** with **GridS
 
 ---
 
-## ðŸš€ Getting Started & Execution Flow
+## Getting Started & Execution Flow
 
 ### Prerequisites
 - Python 3.8+ (recommended Python 3.10+)
@@ -160,7 +160,7 @@ Visit:
 
 ---
 
-## ðŸ“‚ Project Structure
+## Project Structure
 
 ```text
 CreditCardDefaultPrediction/
@@ -203,7 +203,7 @@ CreditCardDefaultPrediction/
 
 ---
 
-## ðŸ¤ Contributing
+## Contributing
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
@@ -213,7 +213,7 @@ CreditCardDefaultPrediction/
 
 ---
 
-## ðŸ“© Contact & Support
+## Contact & Support
 
 **Harshal** - [harshal3558@gmail.com](mailto:harshal3558@gmail.com)  
 Project Repository: [CreditCardDefaultPrediction](https://github.com/harshal3558/CreditCardDefaultPrediction)

@@ -61,7 +61,7 @@ etl_pipeline/logs/*.log
 *.log
 
 # MLflow local runs
-mlruns/.trash/
+mlruns/
 
 # OS and IDE files
 .DS_Store
