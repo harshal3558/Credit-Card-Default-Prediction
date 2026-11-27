@@ -1,4 +1,4 @@
-﻿# ðŸ’³ Credit Card Default Prediction System (CCDP)
+﻿# Credit Card Default Prediction System (CCDP)
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0%2B-000000?style=for-the-badge&logo=flask&logoColor=white)
